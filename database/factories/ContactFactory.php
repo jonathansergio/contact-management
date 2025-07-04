@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\Contact;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Contact>
+ * @extends Factory<Contact>
  */
 class ContactFactory extends Factory
 {
@@ -19,7 +20,7 @@ class ContactFactory extends Factory
         return [
             'name' => $this->faker->name,
             'email' => $this->faker->unique()->safeEmail,
-            'phone' => $this->faker->phoneNumber,
+            'phone' => preg_replace('/\D/', '', $this->faker->phoneNumber()),
         ];
     }
 }
