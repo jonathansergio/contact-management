@@ -2,13 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\Contact;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-class CreateContactsTest extends TestCase
+class ContactTest extends TestCase
 {
+    use RefreshDatabase;
+
     #[Test]
     public function it_should_be_able_to_create_a_new_contact(): void
     {
@@ -18,10 +20,9 @@ class CreateContactsTest extends TestCase
             'phone' => '(41) 98899-4422'
         ];
 
-        $response = $this->post('/contacts', $data);
+        $response = $this->postJson('/api/contacts', $data);
 
-        $response->assertStatus(200);
-
+        $response->assertStatus(201);
 
         $expected = $data;
         $expected['phone'] = preg_replace('/\D/', '', $expected['phone']);
@@ -38,51 +39,45 @@ class CreateContactsTest extends TestCase
             'phone' => '419'
         ];
 
-        $response = $this->post('/contacts', $data);
+        $response = $this->postJson('/api/contacts', $data);
 
-        $response->assertSessionHasErrors([
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors([
             'name',
             'email',
             'phone'
         ]);
-
         $this->assertDatabaseCount('contacts', 0);
     }
 
     #[Test]
     public function it_should_be_able_to_list_contacts_paginated_by_10_items_per_page(): void
     {
-        \App\Models\Contact::factory(20)->create();
+        Contact::factory(20)->create();
 
-        $response = $this->get('/contacts');
+        $response = $this->getJson('/api/contacts');
 
         $response->assertStatus(200);
 
-        $response->assertViewIs('contacts.index');
+        $data = $response->json('data');
 
-        $response->assertViewHas('contacts');
-
-        $contacts = $response->viewData('contacts');
-
-        $this->assertCount(10, $contacts);
+        $this->assertCount(10, $data);
     }
 
     #[Test]
     public function it_should_be_able_to_delete_a_contact(): void
     {
-        $contact = \App\Models\Contact::factory()->create();
-
-        $response = $this->delete("/contacts/{$contact->id}");
+        $contact = Contact::factory()->create();
+        $response = $this->deleteJson("/api/contacts/{$contact->id}");
 
         $response->assertStatus(200);
-
         $this->assertDatabaseMissing('contacts', $contact->toArray());
     }
 
     #[Test]
     public function the_contact_email_should_be_unique(): void
     {
-        $contact = \App\Models\Contact::factory()->create();
+        $contact = Contact::factory()->create();
 
         $data = [
             'name' => 'Rodolfo Meri',
@@ -90,19 +85,19 @@ class CreateContactsTest extends TestCase
             'phone' => '(41) 98899-4422'
         ];
 
-        $response = $this->post('/contacts', $data);
+        $response = $this->postJson('/api/contacts', $data);
 
-        $response->assertSessionHasErrors([
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors([
             'email'
         ]);
-
         $this->assertDatabaseCount('contacts', 1);
     }
 
     #[Test]
     public function it_should_be_able_to_update_a_contact(): void
     {
-        $contact = \App\Models\Contact::factory()->create();
+        $contact = Contact::factory()->create();
 
         $data = [
             'name' => 'Rodolfo Meri',
@@ -110,16 +105,14 @@ class CreateContactsTest extends TestCase
             'phone' => '(41) 98899-4422'
         ];
 
-        $response = $this->put("/contacts/{$contact->id}", $data);
+        $response = $this->putJson("/api/contacts/{$contact->id}", $data);
 
         $response->assertStatus(200);
 
         $expected = $data;
-
         $expected['phone'] = preg_replace('/\D/', '', $expected['phone']);
 
         $this->assertDatabaseHas('contacts', $expected);
-
         $this->assertDatabaseMissing('contacts', $contact->toArray());
     }
 }
