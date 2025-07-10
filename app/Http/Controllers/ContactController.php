@@ -4,41 +4,44 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ContactRequest;
 use App\Models\Contact;
-use Illuminate\Http\JsonResponse;
+use App\Services\ContactService;
+use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ContactController extends Controller
 {
-    public function index(): JsonResponse
-    {
-        $contacts = Contact::paginate(10);
+    public function __construct(protected ContactService $service) {}
 
-        return response()->json($contacts);
+    public function index(): Response
+    {
+        $contacts = $this->service->listPaginated();
+
+        return Inertia::render('Contacts/Index', [
+            'contacts' => $contacts,
+        ]);
     }
 
-    public function store(ContactRequest $request): JsonResponse
+    public function store(ContactRequest $request): RedirectResponse
     {
-        $validated = $request->validated();
-        $validated['phone'] = preg_replace('/\D/', '', $validated['phone']);
-        $contact = Contact::create($validated);
+        $this->service->create($request->validated());
 
-        return response()->json($contact, 201);
+        return redirect()->back()->with('success', 'Contato criado com sucesso.');
     }
 
-    public function update(ContactRequest $request, $id): JsonResponse
+    public function update(ContactRequest $request, $id): RedirectResponse
     {
         $contact = Contact::findOrFail($id);
-        $validated = $request->validated();
-        $validated['phone'] = preg_replace('/\D/', '', $validated['phone']);
-        $contact->update($validated);
+        $this->service->update($contact, $request->validated());
 
-        return response()->json($contact);
+        return redirect()->back()->with('success', 'Contato atualizado com sucesso.');
     }
 
-    public function destroy($id): JsonResponse
+    public function destroy($id): RedirectResponse
     {
         $contact = Contact::findOrFail($id);
-        $contact->delete();
+        $this->service->delete($contact);
 
-        return response()->json(['message' => 'Contact deleted']);
+        return redirect()->back()->with('success', 'Contato removido.');
     }
 }

@@ -1,7 +1,7 @@
-import './bootstrap';
-
+import './bootstrap'
 import { createApp, h } from 'vue'
 import { createInertiaApp } from '@inertiajs/vue3'
+import TheMask from 'vue-the-mask'
 
 createInertiaApp({
     resolve: name => {
@@ -9,8 +9,9 @@ createInertiaApp({
         return pages[`./Pages/${name}.vue`]
     },
     setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
-            .use(plugin)
-            .mount(el)
+        const app = createApp({ render: () => h(App, props) })
+        app.use(plugin)
+        app.use(TheMask)
+        app.mount(el)
     },
 })

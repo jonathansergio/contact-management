@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Api\ContactApiController;
 use Illuminate\Support\Facades\Route;
 
-Route::apiResource('contacts', ContactController::class);
+Route::apiResource('contacts', ContactApiController::class);
