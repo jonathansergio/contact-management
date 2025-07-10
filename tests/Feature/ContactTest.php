@@ -11,6 +11,12 @@ class ContactTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware();
+    }
+
     #[Test]
     public function it_should_be_able_to_create_a_new_contact(): void
     {
@@ -88,9 +94,7 @@ class ContactTest extends TestCase
         $response = $this->postJson('/api/contacts', $data);
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors([
-            'email'
-        ]);
+        $response->assertJsonValidationErrors(['email']);
         $this->assertDatabaseCount('contacts', 1);
     }
 

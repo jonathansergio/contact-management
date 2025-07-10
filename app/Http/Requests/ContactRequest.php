@@ -2,50 +2,26 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ContactRequest extends FormRequest
 {
-    /**
-     * @return bool
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array|string>
-     */
     public function rules(): array
     {
-        $contactId = $this->route('id');
+        $contactId = $this->route('id') ?? $this->route('contact');
 
         return [
-            'name' => 'required|min:3',
+            'name' => 'required|min:3|unique:contacts,name,' . $contactId,
             'email' => 'required|email|unique:contacts,email,' . $contactId,
-            'phone' => ['required', 'regex:/^\d{7,11}$/']
+            'phone' => ['required', 'regex:/^\d{7,11}$/', 'unique:contacts,phone,' . $contactId],
         ];
-    }
-
-    public function wantsJson(): bool
-    {
-        return true;
-    }
-
-    protected function failedValidation(Validator $validator)
-    {
-        $response = response()->json([
-            'message' => 'Validation errors',
-            'errors' => $validator->errors()
-        ], 422);
-
-        throw new ValidationException($validator, $response);
     }
 
     protected function prepareForValidation(): void
@@ -55,5 +31,18 @@ class ContactRequest extends FormRequest
                 'phone' => preg_replace('/\D/', '', $this->input('phone')),
             ]);
         }
+    }
+
+    protected function failedValidation(Validator $validator): void
+    {
+        if ($this->header('X-Inertia')) {
+            throw new HttpResponseException(
+                redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput()
+            );
+        }
+
+        parent::failedValidation($validator);
     }
 }
